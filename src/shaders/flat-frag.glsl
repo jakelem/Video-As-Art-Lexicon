@@ -402,10 +402,14 @@ vec4 accumulateDensity(vec3 p) {
         }
         
         // Comment in for Object
-       /* density = getAlbedo(pos);
-        col += density;
+        /*
+        density = getAlbedo(pos);
+        if(density.a > 0.9) {
+            return col;
+        }
+        col += density;*/
 
-        t += max(t * 0.001 + density.a * 0.1, 0.015);*/
+       // t += max(t * 0.001 + density.a * 0.1, 0.015);
     }
     
     return col;

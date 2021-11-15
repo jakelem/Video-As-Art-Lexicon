@@ -344,10 +344,10 @@ vec4 getAlbedo(vec3 p) {
             vec3 letter = 0.3 * vec3(float(x), float(y), float(z));
             freq *= 1.9;
             freq = min(freq, 10.0);
-            amp *= 1.01;
+            amp *= 0.9;
             
             noiseAmp *= 0.5;
-            noiseFreq *= 1.4;
+            noiseFreq *= 2.0;
             
             vec4 noiseOctave = noiseAmp * noise3(noiseFreq * (p));
 
@@ -375,7 +375,7 @@ vec4 getAlbedo(vec3 p) {
 
     //comment in for fbm implementation
     //alpha /= 50.0 * wordLength * float(numIterations);
-    
+    alpha = clamp(alpha, 0.0, 1.0);
     albedo = normalize(albedo);
 
     return vec4(albedo, alpha);
@@ -392,6 +392,7 @@ vec4 accumulateDensity(vec3 p) {
         vec4 density = vec4(0.0,0.0,0.0,0.015);
         
         //Comment in for cloud
+        /*
         if (map(pos).x < 0.01) {
             density = getAlbedo(pos);
             col += density;
@@ -400,16 +401,15 @@ vec4 accumulateDensity(vec3 p) {
         } else {
             break;
         }
-        
+        */
         // Comment in for Object
-        /*
+        
         density = getAlbedo(pos);
         if(density.a > 0.9) {
             return col;
         }
-        col += density;*/
-
-       // t += max(t * 0.001 + density.a * 0.1, 0.015);
+        col += density;
+        t += max(t * 0.001 + density.a * 0.1, 0.015);
     }
     
     return col;
@@ -497,6 +497,24 @@ float softShadow(vec3 origin, vec3 dir, float minT, float maxT, float k)
     return res;
 
 }
+// From https://gamedev.stackexchange.com/questions/59797/glsl-shader-change-hue-saturation-brightness
+vec3 rgb2hsv(vec3 c)
+{
+    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv2rgb(vec3 c)
+{
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
 
 void main() {
     float modTime = mod(u_Time, 100.0 * pi);
@@ -516,8 +534,8 @@ void main() {
     
     PointLight[3] pointLights;
     pointLights[0] = PointLight(vec3(1.0, 100.0, -20.0), 0.9 * vec3(0.9,0.99,0.98), true, 0.6);
-    pointLights[1] = PointLight(vec3(-80.0, 0.6, 20.0), 0.9 * vec3(0.9,0.7,0.7), false, 0.6);
-    pointLights[2] = PointLight(vec3(80.0, -40, 20.0), 0.8 * vec3(0.7,0.7,0.9), false, 0.2);
+    pointLights[1] = PointLight(vec3(-80.0, 0.6, 20.0), 0.3 * vec3(0.9,0.7,0.7), false, 0.1);
+    pointLights[2] = PointLight(vec3(80.0, -40, 20.0), 0.3 * vec3(0.7,0.7,0.9), false, 0.1);
 
     vec4 isect = raycast(u_Eye, dir, 200);
     float a = getBias((fs_Pos.y + 1.0) * 0.5, 0.68);
@@ -534,7 +552,7 @@ void main() {
         vec3 normal = calcNormals(isect.xyz);
         vec3 viewVec = normalize(isect.xyz - u_Eye.xyz);
         float kd = 1.5;
-        float ks = 0.2;
+        float ks = 0.9;
         float cosPow = 128.0;
         vec4 albedoAlpha = accumulateDensity(isect.xyz);
 
@@ -559,13 +577,12 @@ void main() {
        // col = mix(col, clearColor, 0.2 * distance(u_Eye, isect.xyz));
         //out_Col = vec4(col, 1.0);
     }
+   // vec3 hsv = rgb2hsv(col);
+    //hsv.y += 0.10;
+    //hsv.z -= 0.1;
+
+   // col = hsv2rgb(hsv);
     out_Col = vec4(col, 1.0);
 
-    
-    if (isect.w < -150.0) {
-      //  out_Col = vec4(vec3(1.0,0.0, 0.0), 1.0);
-
-    }
-        
 
 }

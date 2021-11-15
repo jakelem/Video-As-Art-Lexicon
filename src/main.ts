@@ -118,9 +118,9 @@ function updateWord()
   // This function will be called every frame
   function tick() {
     updateWord();
-    //camera.animate();
+    camera.animate();
 
-    camera.update();
+   // camera.update();
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();

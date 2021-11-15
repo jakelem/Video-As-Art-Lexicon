@@ -18,10 +18,10 @@ class Camera {
     this.controls = CameraControls(document.getElementById('canvas'), {
       eye: position,
       center: target,
-     // rotateSpeed:0.0,
-      //translateSpeed: 0.0,
-     // zoomSpeed:0.0,
-     // mode:'turntable'
+      rotateSpeed:0.0,
+      translateSpeed: 0.0,
+      zoomSpeed:0.0,
+      mode:'turntable'
     });
 
     vec3.add(this.target, this.position, this.direction);

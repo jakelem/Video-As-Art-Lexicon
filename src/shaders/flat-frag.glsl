@@ -318,7 +318,8 @@ vec2 map(vec3 p)
 }
 
 int numIterations = 40;
-vec4 getAlbedo(vec3 p) {
+vec4 getAlbedo(vec3 p, float dist) {
+    
     float floorTime = floor(mod(u_Time * animSpeed, 26.0));
     float modTime = mod(u_Time * animSpeed, 1000.0);
     float amp = 0.8;
@@ -348,19 +349,24 @@ vec4 getAlbedo(vec3 p) {
             
             noiseAmp *= 0.5;
             noiseFreq *= 2.0;
-            
-            vec4 noiseOctave = noiseAmp * noise3(noiseFreq * (p));
+            vec3 offP = p.xyz + normalize(letter) * modTime;
+
+            vec4 noiseOctave = noiseAmp * noise3(noiseFreq * (p + letter));
 
             noise += noiseOctave;
             
             
             wordsum += letter;
             
-            vec3 offP = p.xyz + normalize(letter) * modTime;
             offP = p.xyz + letter;
             float a = abs(amp * (sin(freq * offP.x) + sin(freq * offP.y) + sin(freq * offP.z)));
             
-            alpha += a * noiseOctave.x;
+            if(dist > -0.1) {
+                alpha += a * noiseOctave.x;
+
+            } else {
+                alpha += a * 3.0;
+            }
             albedo += letter * a;
 
             /*
@@ -368,10 +374,10 @@ vec4 getAlbedo(vec3 p) {
             albedo += letter * a;*/
         }
     }
-   //  noise = fbm3(p + wordsum, 5, 1.1, 1.0, 0.5, 1.8);
+    // noise = fbm3(p + wordsum, 5, 1.1, 1.0, 0.5, 1.8);
     alpha *= noise.x;
     //comment in for trig implementation
-    alpha /= 2.0 * wordLength * float(numIterations);
+    alpha /= 10.0 * wordLength * float(numIterations);
 
     //comment in for fbm implementation
     //alpha /= 50.0 * wordLength * float(numIterations);
@@ -392,24 +398,24 @@ vec4 accumulateDensity(vec3 p) {
         vec4 density = vec4(0.0,0.0,0.0,0.015);
         
         //Comment in for cloud
-        /*
-        if (map(pos).x < 0.01) {
-            density = getAlbedo(pos);
+        float dist = map(pos).x;
+        if (dist < 0.01) {
+            density = getAlbedo(pos, dist);
             col += density;
             t += max(t * 0.001 + density.a * 0.1, 0.015);
-
+            
         } else {
             break;
         }
-        */
-        // Comment in for Object
         
+        // Comment in for Object
+        /*
         density = getAlbedo(pos);
         if(density.a > 0.9) {
             return col;
         }
         col += density;
-        t += max(t * 0.001 + density.a * 0.1, 0.015);
+        t += max(t * 0.001 + density.a * 0.1, 0.015);*/
     }
     
     return col;
@@ -542,6 +548,8 @@ void main() {
     
     // Clear color
     vec3 clearColor = vec3(0.0);
+     clearColor = vec3(1.0);
+
     vec3 albedo = mix(vec3(0.58,0.6,0.72), vec3(0.92,0.95,0.96), a);
     albedo = vec3(0.0);
     vec3 col = albedo;
